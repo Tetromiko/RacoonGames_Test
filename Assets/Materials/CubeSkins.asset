@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0ef047b22984719961c218ebb350b79, type: 3}
+  m_Name: CubeSkins
+  m_EditorClassIdentifier: Assembly-CSharp::Codebase.CubeSkins
+  materials:
+  - {fileID: 2100000, guid: 3cecf9851e0a1b94c93acce6457152d8, type: 2}
+  - {fileID: 2100000, guid: a725b093eedf68c40a0a2a7150dc2e6d, type: 2}
+  - {fileID: 2100000, guid: 26bca98cb8d4d174f94ee3c5f797fa35, type: 2}
+  - {fileID: 2100000, guid: c6e20ce586f4db94da0907aa44940d6b, type: 2}
+  - {fileID: 2100000, guid: cc5577dc5e756dd47b497c2bbf8f3d98, type: 2}
