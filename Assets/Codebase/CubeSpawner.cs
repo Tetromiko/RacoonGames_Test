@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -8,37 +7,51 @@ namespace Codebase
     public class CubeSpawner : MonoBehaviour
     {
         [SerializeField] private Cube cubePrefab;
+        [SerializeField] private MergeManager mergeManager;
+        [SerializeField] private CubeAudioManager audioManager;
+
+        private const int PoolDefaultCapacity = 10;
+        private const int PoolMaxSize = 50;
+
+        private readonly List<Cube> _activeCubes = new();
 
         public ObjectPool<Cube> CubePool { get; private set; }
-        
-        private readonly HashSet<Cube> _activeCubes = new();
 
-        public void Initialize()
+        public void Initialize(MergeManager mergeManager, CubeAudioManager audioManager)
         {
+            this.mergeManager = mergeManager;
+            this.audioManager = audioManager;
+
             CubePool = new ObjectPool<Cube>(
-                createFunc: CreateCube,
-                actionOnGet: OnGet,
-                actionOnRelease: OnRelease,
-                actionOnDestroy: cube => Destroy(cube.gameObject),
-                collectionCheck: true,
-                defaultCapacity: 10,
-                maxSize: 50
+                CreateCube,
+                OnGet,
+                OnRelease,
+                cube => Destroy(cube.gameObject),
+                true,
+                PoolDefaultCapacity,
+                PoolMaxSize
             );
         }
 
-        private void OnGet(Cube cube)
+        public Cube Spawn(Vector3 position, Quaternion rotation, int value)
         {
-            cube.gameObject.SetActive(true);
-            _activeCubes.Add(cube);
+            CubePool.Get(out var cube);
+            cube.Initialize(value, position, rotation);
+            cube.OnRecall += OnRecall;
+            return cube;
         }
 
-        private void OnRelease(Cube cube)
+        public void ResetAllCubes()
         {
-            cube.gameObject.SetActive(false);
-            _activeCubes.Remove(cube);
-        }
+            var cubesToRelease = new List<Cube>(_activeCubes);
 
-        private void OnDisable() => CubePool?.Dispose();
+            foreach (var cube in cubesToRelease)
+            {
+                if (!cube.gameObject.activeSelf) continue;
+                cube.OnRecall -= OnRecall;
+                CubePool.Release(cube);
+            }
+        }
 
         private Cube CreateCube()
         {
@@ -49,17 +62,26 @@ namespace Codebase
             return cube;
         }
 
-        public Cube Create(Vector3 position, Quaternion rotation, int value)
+        private void OnGet(Cube cube)
         {
-            CubePool.Get(out Cube cube);
-            cube.Initialize(value, position, rotation);
-            return cube;
+            cube.gameObject.SetActive(true);
+            _activeCubes.Add(cube);
+            cube.OnCollision += audioManager.PlayHit;
+            cube.OnCubeCollision += mergeManager.HandleCollision;
         }
 
-        public void ReleaseAll()
+        private void OnRelease(Cube cube)
         {
-            foreach (var cube in _activeCubes.ToArray())
-                CubePool.Release(cube);
+            cube.OnCollision -= audioManager.PlayHit;
+            cube.OnCubeCollision -= mergeManager.HandleCollision;
+            cube.gameObject.SetActive(false);
+            _activeCubes.Remove(cube);
+        }
+
+        private void OnRecall(Cube cube)
+        {
+            CubePool.Release(cube);
+            cube.OnRecall -= OnRecall;
         }
     }
 }

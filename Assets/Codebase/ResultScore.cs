@@ -3,20 +3,13 @@ using UnityEngine;
 
 namespace Codebase
 {
-    public class ResultScore: MonoBehaviour
+    public class ResultScore : MonoBehaviour
     {
-        [SerializeField]
-        private TMP_Text scoreText;
-        private ScoreCounter _scoreCounter;
+        [SerializeField] private TMP_Text scoreText;
 
-        public void Initialize(ScoreCounter scoreCounter)
+        public void Set(int score)
         {
-            _scoreCounter = scoreCounter;
-        }
-
-        public void GetResult()
-        {
-            scoreText.text = $"Final Score: {_scoreCounter.Score}";
+            scoreText.text = $"Final Score: {score}";
         }
     }
 }

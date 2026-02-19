@@ -1037,7 +1037,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f46af5d18de13ef419fbc0040e9c88f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Codebase.Cube
-  <Value>k__BackingField: 0
+  <Value>k__BackingField: 2
   numberPlates:
   - {fileID: 8801155987056682408}
   - {fileID: 8405640772068419367}
@@ -1048,7 +1048,7 @@ MonoBehaviour:
   cubeSkins: {fileID: 11400000, guid: 06e618ce81b469241830f571ff6d10da, type: 2}
   meshRenderer: {fileID: 7103415585296198548}
   rb: {fileID: 3151814731698226475}
-  isMerging: 0
+  minCollisionVelocity: 1
 --- !u!54 &3151814731698226475
 Rigidbody:
   m_ObjectHideFlags: 0

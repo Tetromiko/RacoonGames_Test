@@ -1,57 +1,48 @@
-using System;
 using UnityEngine;
 
 namespace Codebase
 {
-    public enum GameState { Idle, Playing, Lost }
-
     public class GameManager : MonoBehaviour
     {
-        [SerializeField] private GameBootstrapper bootstrapper;
-        [SerializeField] private GameObject gameUI;
-        [SerializeField] private ResultScore loseUI;
+        [SerializeField] private Launcher launcher;
+        [SerializeField] private UIManager uiManager;
+        [SerializeField] private AudioClipsManager audioManager;
+        [SerializeField] private CubeSpawner cubeSpawner;
+        [SerializeField] private GameOverTrigger gameOverTrigger;
 
-        public static GameManager Instance { get; private set; }
-        public GameState State { get; private set; }
-
-        private void Awake()
+        public void Initialize(Launcher launcher, UIManager uiManager, AudioClipsManager audioManager, CubeSpawner cubeSpawner, GameOverTrigger gameOverTrigger)
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-        }
-
-        public void Start()
-        {
-            StartGame();
+            this.launcher = launcher;
+            this.uiManager = uiManager;
+            this.audioManager = audioManager;
+            this.cubeSpawner = cubeSpawner;
+            this.gameOverTrigger = gameOverTrigger;
         }
 
         public void StartGame()
         {
-            State = GameState.Playing;
-            gameUI.SetActive(true);
-            loseUI.gameObject.SetActive(false);
-            bootstrapper.Launcher.StartSpawning();
+            gameOverTrigger.gameObject.SetActive(true);
+            launcher.gameObject.SetActive(true);
+            audioManager.StopAllSounds();
+            uiManager.ShowInGameMenu();
+            audioManager.PlaySound("background", volume: 0.2f, loop: true);
+            launcher.PrepareNextCube();
         }
 
-        public void RestartGame()
+        public void Reset()
         {
-            State = GameState.Playing;
-            bootstrapper.CubeSpawner.ReleaseAll();
-            bootstrapper.LoseArea.Clear();
-            bootstrapper.ScoreCounter.ResetScore();
+            uiManager.scoreCounter.ResetScore();
+            cubeSpawner.ResetAllCubes();
             StartGame();
         }
 
-        public void Lose()
+        public void GameOver()
         {
-            State = GameState.Lost;
-            loseUI.gameObject.SetActive(true);
-            gameUI.SetActive(false);
-            loseUI.GetResult();
+            gameOverTrigger.gameObject.SetActive(false);
+            launcher.gameObject.SetActive(false);
+            uiManager.ShowPostGameMenu();
+            audioManager.StopAllSounds();
+            audioManager.PlaySound("failure", volume: 0.1f);
         }
     }
 }

@@ -5,57 +5,90 @@ namespace Codebase
 {
     public class LauncherController : MonoBehaviour
     {
-        [SerializeField] private LayerMask launchPad;
-        [SerializeField] private float launchThreshold;
+        [SerializeField] private float aimThreshold = 1f;
+        [SerializeField] private float maxAimDistance = 5f;
+        [SerializeField] private Launcher launcher;
 
-        private Launcher _launcher;
-        private bool _isFollowing;
-        private float _anchorZ, _currentZ;
         private Camera _camera;
+        private bool _isAiming;
+        private bool _isTouching;
+        private Vector3 _touchStartPosition;
 
-        public void Initialize(Launcher launcher)
-        {
-            _launcher = launcher;
-            _camera = Camera.main;
-        }
+        private float AimRange => maxAimDistance - aimThreshold;
 
         private void Update()
         {
-            if (!_isFollowing) return;
-            if (TryGetLaunchPadMousePosition() is not { } position) return;
+            if (!_isTouching) return;
 
-            _launcher.Move(position, Time.deltaTime);
-            _currentZ = position.z;
+            var touchPos = GetPlaneTouchPosition();
+
+            if (_isAiming)
+                HandleAiming(touchPos);
+            else
+                HandleMoving(touchPos);
+        }
+
+        public void Initialize(Launcher launcher)
+        {
+            this.launcher = launcher;
+            _camera = Camera.main;
         }
 
         public void StartFollowing()
         {
-            _launcher.RequestSpawn();
-            if (TryGetLaunchPadMousePosition() is not { } position) return;
-            _isFollowing = true;
-            _anchorZ = position.z;
+            _touchStartPosition = GetPlaneTouchPosition();
+            _isTouching = true;
+            _isAiming = false;
+            launcher.Move(_touchStartPosition);
         }
 
         public void StopFollowing()
         {
-            _isFollowing = false;
-            float pullDistance = _anchorZ - _currentZ;
+            if (!_isTouching) return;
 
-            if (pullDistance > launchThreshold)
-                _launcher.Launch(pullDistance);
+            if (_isAiming)
+                launcher.Launch();
+
+            _isTouching = false;
+            _isAiming = false;
         }
 
-        private Vector3? TryGetLaunchPadMousePosition()
+        private void HandleAiming(Vector3 touchPos)
         {
-            if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
-            {
-                Vector2 pos = Touchscreen.current.primaryTouch.position.ReadValue();
-                var ray = _camera.ScreenPointToRay(pos);
-                return Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, launchPad) 
-                    ? hit.point 
-                    : null;
-            }
-            return null;
+            var launcherPos = launcher.transform.position;
+            var aimOrigin = new Vector3(_touchStartPosition.x, 0f, launcherPos.z);
+            var aim = aimOrigin - touchPos;
+            var pull = Mathf.Clamp(aim.magnitude - aimThreshold, 0f, AimRange) / AimRange;
+
+            launcher.Aim(aim.normalized, pull);
+
+            var pulledBack = Vector3.Distance(touchPos, new Vector3(touchPos.x, 0f, launcherPos.z)) < aimThreshold;
+            if (pulledBack)
+                _isAiming = false;
+        }
+
+        private void HandleMoving(Vector3 touchPos)
+        {
+            launcher.Move(touchPos);
+            _touchStartPosition = touchPos;
+
+            var draggedBack = Mathf.Max(launcher.transform.position.z - touchPos.z, 0f) > aimThreshold;
+            if (draggedBack)
+                _isAiming = true;
+        }
+
+        private Vector3 GetPlaneTouchPosition()
+        {
+            var screenPos = Touchscreen.current?.primaryTouch.position.ReadValue()
+                            ?? new Vector2(Screen.width / 2f, Screen.height / 2f);
+
+            var ray = _camera.ScreenPointToRay(screenPos);
+            var plane = new Plane(Vector3.up, Vector3.up);
+            plane.Raycast(ray, out var enter);
+
+            var position = ray.GetPoint(enter);
+            position.y = 0f;
+            return position;
         }
     }
 }

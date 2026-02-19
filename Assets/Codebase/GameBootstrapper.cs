@@ -1,38 +1,33 @@
-using TMPro;
 using UnityEngine;
-using UnityEngine.Pool;
 
 namespace Codebase
 {
     public class GameBootstrapper : MonoBehaviour
     {
-        
         [SerializeField] private Launcher launcher;
         [SerializeField] private CubeSpawner cubeSpawner;
         [SerializeField] private LauncherController launcherController;
+        [SerializeField] private GameManager gameManager;
         [SerializeField] private MergeManager mergeManager;
-        [SerializeField] private ScoreCounter scoreCounter;
-        [SerializeField] private LoseArea loseArea;
-        [SerializeField] private ResultScore resultScore;
-
-        public Launcher Launcher => launcher;
-        public CubeSpawner CubeSpawner => cubeSpawner;
-        public ScoreCounter ScoreCounter => scoreCounter;
-        public LoseArea LoseArea => loseArea;
-        
-        private ObjectPool<Cube> _cubePool;
+        [SerializeField] private AudioClipsManager audioManager;
+        [SerializeField] private CubeAudioManager cubeAudioManager;
+        [SerializeField] private UIManager uiManager;
+        [SerializeField] private GameOverTrigger gameOverTrigger;
 
         public void Awake()
         {
-            cubeSpawner.Initialize();
-            _cubePool = cubeSpawner.CubePool;
-            
-            launcher.Initialize(cubeSpawner, loseArea);
-            mergeManager.SetPool(_cubePool);
+            audioManager.Initialize();
+            cubeAudioManager.Initialize(audioManager);
+            cubeSpawner.Initialize(mergeManager, cubeAudioManager);
+            launcher.Initialize(cubeSpawner);
             launcherController.Initialize(launcher);
-            resultScore.Initialize(scoreCounter);
+            gameManager.Initialize(launcher, uiManager, audioManager, cubeSpawner, gameOverTrigger);
 
-            mergeManager.OnMerge += scoreCounter.IncreaseScore;
+            mergeManager.OnMerge += uiManager.scoreCounter.IncreaseScore;
+            mergeManager.OnMerge += cubeAudioManager.PlayMerge;
+            gameOverTrigger.OnGameOver += gameManager.GameOver;
+
+            gameManager.StartGame();
         }
     }
 }

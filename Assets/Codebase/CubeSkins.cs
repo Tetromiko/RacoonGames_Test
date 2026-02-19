@@ -6,15 +6,16 @@ namespace Codebase
     public class CubeSkins : ScriptableObject
     {
         public Material[] materials;
-    
+
         public Material GetMaterial(int value)
         {
-            int index = 0;
+            var index = 0;
             while (value > 2)
             {
                 value >>= 1;
                 index++;
             }
+
             return materials[index % materials.Length];
         }
     }

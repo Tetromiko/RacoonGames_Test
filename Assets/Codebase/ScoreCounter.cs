@@ -5,10 +5,9 @@ namespace Codebase
 {
     public class ScoreCounter : MonoBehaviour
     {
-        [SerializeField]
-        private TMP_Text text;
-        [field: SerializeField]
-        public int Score { get; private set; }
+        [SerializeField] private TMP_Text text;
+
+        [field: SerializeField] public int Score { get; private set; }
 
         public void IncreaseScore()
         {

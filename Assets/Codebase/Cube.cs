@@ -1,7 +1,7 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Codebase
 {
@@ -11,12 +11,12 @@ namespace Codebase
 
         [SerializeField] private List<TMP_Text> numberPlates;
         [SerializeField] private CubeSkins cubeSkins;
-
         [SerializeField] private MeshRenderer meshRenderer;
         [SerializeField] private Rigidbody rb;
-        
-        public bool isMerging;
-        
+        [SerializeField] private float minCollisionVelocity = 1f;
+
+        public bool IsMerging { get; private set; }
+
         public Vector3 LinearVelocity
         {
             get => rb.linearVelocity;
@@ -29,14 +29,29 @@ namespace Codebase
             set => rb.angularVelocity = value;
         }
 
-        public void AddForce(Vector3 direction, float force) =>
-            rb.AddForce(direction * force, ForceMode.Impulse);
-
-        public void SetKinematic(bool kinematic)
+        private void OnDisable()
         {
-            rb.isKinematic = kinematic;
-            isMerging = kinematic;
+            IsMerging = false;
+            rb.isKinematic = false;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision.gameObject.TryGetComponent(out Cube other))
+            {
+                OnCubeCollision?.Invoke(this, other);
+                return;
+            }
+
+            if (collision.relativeVelocity.magnitude >= minCollisionVelocity)
+                OnCollision?.Invoke();
+        }
+
+        public event Action<Cube, Cube> OnCubeCollision;
+        public event Action OnCollision;
+        public event Action<Cube> OnRecall;
 
         public void Initialize(int value, Vector3 position, Quaternion rotation)
         {
@@ -48,27 +63,30 @@ namespace Codebase
         public void Initialize(int value)
         {
             Value = value;
-            meshRenderer.material = cubeSkins.GetMaterial(Value);
+            meshRenderer.material = cubeSkins.GetMaterial(value);
+
             foreach (var plate in numberPlates)
                 plate.text = value.ToString();
         }
 
-        private void OnCollisionEnter(Collision collision)
+        public void AddForce(Vector3 direction, float force)
         {
-            var pitch = Random.Range(2f, 5f);
-            var volume = 0.1f;
-            AudioClipsManager.Instance.PlaySound("hit", pitch, volume);
-            if (isMerging) return;
-            if (!collision.gameObject.TryGetComponent(out Cube other)) return;
-            MergeManager.Instance.RegisterContact(this, other);
+            rb.AddForce(direction * force, ForceMode.Impulse);
         }
 
-        private void OnDisable()
+        public void SetKinematic(bool kinematic)
         {
-            isMerging = false;
-            rb.isKinematic = false;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = kinematic;
+        }
+
+        public void SetMerging(bool merging)
+        {
+            IsMerging = merging;
+        }
+
+        public void Recall()
+        {
+            OnRecall?.Invoke(this);
         }
     }
 }
